@@ -110,6 +110,12 @@
             background-size: 400% 400%;
             animation: gradientAnimation 15s ease infinite;
         }
+
+        .text-sm {
+            font-size: .875rem;
+            line-height: 1.25rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="min-h-screen p-8">
@@ -196,71 +202,92 @@
     <script>
         let courses = [];
         let courseColors = {};
-        let colorPalette = ['#f28b82', '#fbbc04', '#34a853', '#4285f4', '#a142f4'];
+        let colorPalette = ['#274001', '#828a00', '#f29f05', '#f25c05', '#d6568c', '#4d8584', '#a62f03', '#400d01'];
         let colorIndex = 0;
 
         function addCourse() {
-            const courseName = document.getElementById('course').value;
-            const classNo = document.getElementById('class').value;
-            const startTime = document.getElementById('startTime').value;
-            const endTime = document.getElementById('endTime').value;
-            const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(cb => cb.value);
+    const courseName = document.getElementById('course').value;
+    const classNo = document.getElementById('class').value;
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(cb => cb.value);
 
-            if (courseName === "" || startTime === "" || endTime === "" || selectedDays.length === 0) {
-                alert("Please fill all fields and select at least one day.");
+    // Validate form fields
+    if (courseName === "" || startTime === "" || endTime === "" || selectedDays.length === 0) {
+        alert("بدون مصخرة، املئ الحقول أولاً");
+        return;
+    }
+
+    // Ensure end time is after start time
+    if (startTime >= endTime) {
+        alert("ما سمعنا بمحاضرة تنتهي قبل تبدأ");
+        return;
+    }
+
+    // Assign color if it's a new course
+    if (!courseColors[courseName]) {
+        courseColors[courseName] = colorPalette[colorIndex % colorPalette.length];
+        colorIndex++;
+    }
+
+    const courseColor = courseColors[courseName];
+
+    // Track if a conflict is detected
+    let conflictDetected = false;
+
+    // Iterate over the selected days
+    selectedDays.forEach(day => {
+        if (conflictDetected) return; // Skip further processing if conflict is found
+
+        const dayColumn = getDayColumnIndex(day);
+        const timeSlot = createTimeSlot(startTime, endTime);
+        const timetable = document.getElementById('timetable');
+
+        timeSlot.forEach(slot => {
+            if (conflictDetected) return; // Skip further processing if conflict is found
+
+            let existingRow = document.getElementById(`row-${slot.time}`);
+            if (!existingRow) {
+                existingRow = createTableRow(slot.time);
+                timetable.querySelector('tbody').appendChild(existingRow);
+            }
+
+            const cell = existingRow.cells[dayColumn];
+
+            // Check for time conflicts
+            if (cell.innerHTML !== "") {
+                alert(`تستهبل! ما ينفع كلاسين في نفس الوقت في يوم ${day} وفي الوقت ${slot.time}`);
+                /*alert(`Time conflict detected for ${day} from ${slot.time}`);*/
+                conflictDetected = true;  // Set conflict flag to true
                 return;
             }
 
-            if (startTime >= endTime) {
-                alert("End time must be after the start time.");
-                return;
-            }
+            // Add course to the cell if no conflict
+            cell.rowSpan = slot.rowSpan;
+            cell.innerHTML = `${courseName}<br>${classNo}<br>${startTime} - ${endTime}`;
+            cell.style.backgroundColor = courseColor;
+            cell.classList.add('course-cell', 'p-2', 'text-white', 'font-semibold', 'text-sm');
 
-            if (!courseColors[courseName]) {
-                courseColors[courseName] = colorPalette[colorIndex % colorPalette.length];
-                colorIndex++;
-            }
+            // Add animation to the new cell
+            gsap.from(cell, {duration: 0.5, opacity: 0, y: 20, ease: "power2.out"});
+        });
+    });
 
-            const courseColor = courseColors[courseName];
+    // If a conflict was detected, stop further execution
+    if (conflictDetected) return;
 
-            selectedDays.forEach(day => {
-                const dayColumn = getDayColumnIndex(day);
-                const timeSlot = createTimeSlot(startTime, endTime);
-                const timetable = document.getElementById('timetable');
+    // Push the course details into the courses array
+    courses.push({ name: courseName, color: courseColor });
+    sortTimetableRows();
 
-                timeSlot.forEach(slot => {
-                    let existingRow = document.getElementById(`row-${slot.time}`);
-                    if (!existingRow) {
-                        existingRow = createTableRow(slot.time);
-                        timetable.querySelector('tbody').appendChild(existingRow);
-                    }
+    // Clear form fields after adding the course
+    document.getElementById('course').value = '';
+    document.getElementById('class').value = '';
+    document.getElementById('startTime').value = '';
+    document.getElementById('endTime').value = '';
+    document.querySelectorAll('input[name="days"]').forEach(cb => cb.checked = false);
+}
 
-                    const cell = existingRow.cells[dayColumn];
-                    if (cell.innerHTML !== "") {
-                        alert(`Time conflict detected for ${day} from ${slot.time}`);
-                        return;
-                    }
-
-                    cell.rowSpan = slot.rowSpan;
-                    cell.innerHTML = `${courseName}<br>${classNo}<br>${startTime} - ${endTime}`;
-                    cell.style.backgroundColor = courseColor;
-                    cell.classList.add('course-cell', 'p-2', 'text-white', 'font-semibold', 'text-sm');
-
-                    // Add animation to the new cell
-                    gsap.from(cell, {duration: 0.5, opacity: 0, y: 20, ease: "power2.out"});
-                });
-            });
-
-            courses.push({ name: courseName, color: courseColor });
-            sortTimetableRows();
-
-            // Clear form fields
-            document.getElementById('course').value = '';
-            document.getElementById('class').value = '';
-            document.getElementById('startTime').value = '';
-            document.getElementById('endTime').value = '';
-            document.querySelectorAll('input[name="days"]').forEach(cb => cb.checked = false);
-        }
 
         function sortTimetableRows() {
             const tbody = document.querySelector('tbody');
