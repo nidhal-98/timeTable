@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent College Timetable Designer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-color: #e0e5ec;
+            --text-color: #333;
+            --neumorphic-light: #ffffff;
+            --neumorphic-dark: #a3b1c6;
+            --accent-color: #4a90e2;
+        }
+
+        .dark-mode {
+            --bg-color: #2a2a2a;
+            --text-color: #e0e0e0;
+            --neumorphic-light: #3a3a3a;
+            --neumorphic-dark: #202020;
+            --accent-color: #64b5f6;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .neumorphic {
+            background: var(--bg-color);
+            box-shadow: 5px 5px 10px var(--neumorphic-dark), -5px -5px 10px var(--neumorphic-light);
+            border-radius: 15px;
+        }
+
+        .neumorphic-inset {
+            background: var(--bg-color);
+            box-shadow: inset 5px 5px 10px var(--neumorphic-dark), inset -5px -5px 10px var(--neumorphic-light);
+            border-radius: 15px;
+        }
+
+        .btn {
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 7px 7px 14px var(--neumorphic-dark), -7px -7px 14px var(--neumorphic-light);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: inset 3px 3px 6px var(--neumorphic-dark), inset -3px -3px 6px var(--neumorphic-light);
+        }
+
+        .course-cell {
+            transition: all 0.3s;
+        }
+
+        .course-cell:hover {
+            transform: scale(1.05);
+        }
+
+        #timetable th {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        #timetable td {
+            transition: background-color 0.3s;
+        }
+
+        .dark-mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .gradient-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <div class="background-animation gradient-bg"></div>
+    <button class="dark-mode-toggle neumorphic p-2" onclick="toggleDarkMode()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+    </button>
+
+    <div class="timetable-container neumorphic p-8 max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8">Intelligent College Timetable Designer</h1>
+        
+        <form id="courseForm" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="neumorphic-inset p-4">
+                    <label for="course" class="block mb-2">Course Name:</label>
+                    <input type="text" id="course" name="course" placeholder="Enter Course Name" class="w-full p-2 neumorphic-inset">
+                </div>
+                <div class="neumorphic-inset p-4">
+                    <label for="class" class="block mb-2">Class Number:</label>
+                    <input type="text" id="class" name="class" placeholder="Enter Class Number" class="w-full p-2 neumorphic-inset">
+                </div>
+                <div class="neumorphic-inset p-4">
+                    <label for="startTime" class="block mb-2">Start Time:</label>
+                    <input type="time" id="startTime" name="startTime" class="w-full p-2 neumorphic-inset">
+                </div>
+                <div class="neumorphic-inset p-4">
+                    <label for="endTime" class="block mb-2">End Time:</label>
+                    <input type="time" id="endTime" name="endTime" class="w-full p-2 neumorphic-inset">
+                </div>
+            </div>
+
+            <fieldset class="neumorphic-inset p-4">
+                <legend class="font-bold mb-2">Select Days:</legend>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="days" value="Sunday" class="form-checkbox">
+                        <span>Sunday</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="days" value="Monday" class="form-checkbox">
+                        <span>Monday</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="days" value="Tuesday" class="form-checkbox">
+                        <span>Tuesday</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="days" value="Wednesday" class="form-checkbox">
+                        <span>Wednesday</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="days" value="Thursday" class="form-checkbox">
+                        <span>Thursday</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <div class="flex justify-center space-x-4">
+                <button type="button" onclick="addCourse()" class="btn neumorphic px-6 py-2 font-semibold">Add Course</button>
+                <button type="button" onclick="clearTimetable()" class="btn neumorphic px-6 py-2 font-semibold">Clear Timetable</button>
+                <button type="button" onclick="saveTimetableAsImage()" class="btn neumorphic px-6 py-2 font-semibold">Save as Picture</Picture></button>
+            </div>
+        </form>
+
+        <div class="overflow-x-auto mt-8">
+            <table id="timetable" class="w-full neumorphic">
+                <thead>
+                    <tr>
+                        <th class="p-3">Time</th>
+                        <th class="p-3">Sunday</th>
+                        <th class="p-3">Monday</th>
+                        <th class="p-3">Tuesday</th>
+                        <th class="p-3">Wednesday</th>
+                        <th class="p-3">Thursday</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let courses = [];
+        let courseColors = {};
+        let colorPalette = ['#f28b82', '#fbbc04', '#34a853', '#4285f4', '#a142f4'];
+        let colorIndex = 0;
+
+        function addCourse() {
+            const courseName = document.getElementById('course').value;
+            const classNo = document.getElementById('class').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(cb => cb.value);
+
+            if (courseName === "" || startTime === "" || endTime === "" || selectedDays.length === 0) {
+                alert("Please fill all fields and select at least one day.");
+                return;
+            }
+
+            if (startTime >= endTime) {
+                alert("End time must be after the start time.");
+                return;
+            }
+
+            if (!courseColors[courseName]) {
+                courseColors[courseName] = colorPalette[colorIndex % colorPalette.length];
+                colorIndex++;
+            }
+
+            const courseColor = courseColors[courseName];
+
+            selectedDays.forEach(day => {
+                const dayColumn = getDayColumnIndex(day);
+                const timeSlot = createTimeSlot(startTime, endTime);
+                const timetable = document.getElementById('timetable');
+
+                timeSlot.forEach(slot => {
+                    let existingRow = document.getElementById(`row-${slot.time}`);
+                    if (!existingRow) {
+                        existingRow = createTableRow(slot.time);
+                        timetable.querySelector('tbody').appendChild(existingRow);
+                    }
+
+                    const cell = existingRow.cells[dayColumn];
+                    if (cell.innerHTML !== "") {
+                        alert(`Time conflict detected for ${day} from ${slot.time}`);
+                        return;
+                    }
+
+                    cell.rowSpan = slot.rowSpan;
+                    cell.innerHTML = `${courseName}<br>${classNo}<br>${startTime} - ${endTime}`;
+                    cell.style.backgroundColor = courseColor;
+                    cell.classList.add('course-cell', 'p-2', 'text-white', 'font-semibold', 'text-sm');
+
+                    // Add animation to the new cell
+                    gsap.from(cell, {duration: 0.5, opacity: 0, y: 20, ease: "power2.out"});
+                });
+            });
+
+            courses.push({ name: courseName, color: courseColor });
+            sortTimetableRows();
+
+            // Clear form fields
+            document.getElementById('course').value = '';
+            document.getElementById('class').value = '';
+            document.getElementById('startTime').value = '';
+            document.getElementById('endTime').value = '';
+            document.querySelectorAll('input[name="days"]').forEach(cb => cb.checked = false);
+        }
+
+        function sortTimetableRows() {
+            const tbody = document.querySelector('tbody');
+            const rows = Array.from(tbody.rows);
+
+            const sortedRows = rows.sort((a, b) => {
+                const timeA = a.cells[0].innerText.split(' - ')[0];
+                const timeB = b.cells[0].innerText.split(' - ')[0];
+                return convertTimeTo24HourFormat(timeA) - convertTimeTo24HourFormat(timeB);
+            });
+
+            tbody.innerHTML = '';
+            sortedRows.forEach(row => tbody.appendChild(row));
+        }
+
+        function convertTimeTo24HourFormat(time) {
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        function getDayColumnIndex(day) {
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+            return days.indexOf(day) + 1;
+        }
+
+        function createTableRow(time) {
+            const row = document.createElement('tr');
+            row.id = `row-${time}`;
+            const timeCell = document.createElement('td');
+            timeCell.innerText = time;
+            timeCell.classList.add('p-2', 'font-semibold');
+            row.appendChild(timeCell);
+
+            for (let i = 0; i < 5; i++) {
+                const cell = document.createElement('td');
+                cell.classList.add('p-2');
+                row.appendChild(cell);
+            }
+
+            return row;
+        }
+
+        function createTimeSlot(startTime, endTime) {
+            const start = new Date(`1970-01-01T${startTime}:00`);
+            const end = new Date(`1970-01-01T${endTime}:00`);
+            const timeSlots = [];
+
+            while (start < end) {
+                const startHours = String(start.getHours()).padStart(2, '0');
+                const startMinutes = String(start.getMinutes()).padStart(2, '0');
+                const endHours = String(new Date(start.getTime() + 30 * 60000).getHours()).padStart(2, '0');
+                const endMinutes = String(new Date(start.getTime() + 30 * 60000).getMinutes()).padStart(2, '0');
+                timeSlots.push({ time: `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`, rowSpan: 1 });
+                start.setMinutes(start.getMinutes() + 30);
+            }
+
+            return timeSlots;
+        }
+
+        function clearTimetable() {
+            const timetable = document.getElementById('timetable').querySelector('tbody');
+            timetable.innerHTML = '';
+            courses = [];
+            courseColors = {};
+            colorIndex = 0;
+        }
+
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            updateTimetableColors();
+        }
+
+        function updateTimetableColors() {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            const timetable = document.getElementById('timetable');
+            const cells = timetable.querySelectorAll('td');
+
+            cells.forEach(cell => {
+                if (cell.classList.contains('course-cell')) {
+                    const originalColor = cell.style.backgroundColor;
+                    const rgb = originalColor.match(/\d+/g);
+                    if (rgb) {
+                        const [r, g, b] = rgb.map(Number);
+                        const adjustedColor = isDarkMode
+                            ? `rgb(${Math.max(r - 30, 0)}, ${Math.max(g - 30, 0)}, ${Math.max(b - 30, 0)})`
+                            : `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`;
+                        cell.style.backgroundColor = adjustedColor;
+                    }
+                }
+            });
+        }
+
+        // Initialize animations
+        gsap.from(".timetable-container", {duration: 1, opacity: 0, y: 50, ease: "power3.out"});
+        gsap.from("h1", {duration: 1, opacity: 0, y: -30, delay: 0.5, ease: "back.out(1.7)"});
+        gsap.from("form", {duration: 1, opacity: 0, scale: 0.9, delay: 0.7, ease: "elastic.out(1, 0.75)"});
+
+        // Animate background
+        gsap.to(".background-animation", {
+            duration: 20,
+            backgroundPosition: "200% 50%",
+            repeat: -1,
+            ease: "linear"
+        });
+
+        function saveTimetableAsImage() {
+            const timetable = document.getElementById('timetable');
+            
+            // Set a fixed width for the timetable before capturing
+            const originalWidth = timetable.style.width;
+            timetable.style.width = '640px';
+
+            html2canvas(timetable, {
+                backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-color'),
+                width: 640,
+                height: 960,
+                scale: 2, // Increase scale for better quality
+            }).then(canvas => {
+                // Reset the timetable width
+                timetable.style.width = originalWidth;
+
+                // Create a download link
+                const link = document.createElement('a');
+                link.download = 'timetable.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        // ... (rest of the JavaScript code remains unchanged) ...
+
+        // Add animation for the new "Save as Picture" button
+        gsap.from(".btn", {duration: 0.5, opacity: 0, y: 20, stagger: 0.1, ease: "power2.out", delay: 1});
+    </script>
+</body>
+</html>
