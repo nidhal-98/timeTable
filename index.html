@@ -206,87 +206,106 @@
         let colorIndex = 0;
 
         function addCourse() {
-    const courseName = document.getElementById('course').value;
-    const classNo = document.getElementById('class').value;
-    const startTime = document.getElementById('startTime').value;
-    const endTime = document.getElementById('endTime').value;
-    const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(cb => cb.value);
+            const courseName = document.getElementById('course').value;
+            const classNo = document.getElementById('class').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            //const systemHours = document.getElementById('systemHours').value;
+            let systemHours=0;
+            const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(cb => cb.value);
 
-    // Validate form fields
-    if (courseName === "" || startTime === "" || endTime === "" || selectedDays.length === 0) {
-        alert("بدون مصخرة، املئ الحقول أولاً");
-        return;
-    }
-
-    // Ensure end time is after start time
-    if (startTime >= endTime) {
-        alert("ما سمعنا بمحاضرة تنتهي قبل تبدأ");
-        return;
-    }
-
-    // Assign color if it's a new course
-    if (!courseColors[courseName]) {
-        courseColors[courseName] = colorPalette[colorIndex % colorPalette.length];
-        colorIndex++;
-    }
-
-    const courseColor = courseColors[courseName];
-
-    // Track if a conflict is detected
-    let conflictDetected = false;
-
-    // Iterate over the selected days
-    selectedDays.forEach(day => {
-        if (conflictDetected) return; // Skip further processing if conflict is found
-
-        const dayColumn = getDayColumnIndex(day);
-        const timeSlot = createTimeSlot(startTime, endTime);
-        const timetable = document.getElementById('timetable');
-
-        timeSlot.forEach(slot => {
-            if (conflictDetected) return; // Skip further processing if conflict is found
-
-            let existingRow = document.getElementById(`row-${slot.time}`);
-            if (!existingRow) {
-                existingRow = createTableRow(slot.time);
-                timetable.querySelector('tbody').appendChild(existingRow);
-            }
-
-            const cell = existingRow.cells[dayColumn];
-
-            // Check for time conflicts
-            if (cell.innerHTML !== "") {
-                alert(`تستهبل! ما ينفع كلاسين في نفس الوقت في يوم ${day} وفي الوقت ${slot.time}`);
-                /*alert(`Time conflict detected for ${day} from ${slot.time}`);*/
-                conflictDetected = true;  // Set conflict flag to true
+            // Validate form fields
+            if (courseName === "" || startTime === "" || endTime === "" || selectedDays.length === 0) {
+                alert("بدون مصخرة، املئ الحقول أولاً");
                 return;
             }
 
-            // Add course to the cell if no conflict
-            cell.rowSpan = slot.rowSpan;
-            cell.innerHTML = `${courseName}<br>${classNo}<br>${startTime} - ${endTime}`;
-            cell.style.backgroundColor = courseColor;
-            cell.classList.add('course-cell', 'p-2', 'text-white', 'font-semibold', 'text-sm');
+            // Ensure end time is after start time
+            if (startTime >= endTime) {
+                alert("ما سمعنا بمحاضرة تنتهي قبل تبدأ");
+                return;
+            }
 
-            // Add animation to the new cell
-            gsap.from(cell, {duration: 0.5, opacity: 0, y: 20, ease: "power2.out"});
-        });
-    });
+            // Assign color if it's a new course
+            if (!courseColors[courseName]) {
+                courseColors[courseName] = colorPalette[colorIndex % colorPalette.length];
+                colorIndex++;
+            }
 
-    // If a conflict was detected, stop further execution
-    if (conflictDetected) return;
+            const courseColor = courseColors[courseName];
 
-    // Push the course details into the courses array
-    courses.push({ name: courseName, color: courseColor });
-    sortTimetableRows();
+            // Track if a conflict is detected
+            let conflictDetected = false;
 
-    // Clear form fields after adding the course
-    document.getElementById('course').value = '';
-    document.getElementById('class').value = '';
-    document.getElementById('startTime').value = '';
-    document.getElementById('endTime').value = '';
-    document.querySelectorAll('input[name="days"]').forEach(cb => cb.checked = false);
-}
+            // Iterate over the selected days
+            selectedDays.forEach(day => {
+                if (conflictDetected) return; // Skip further processing if conflict is found
+
+            // Convert startTime and endTime to minutes since midnight
+            const [startHours, startMinutes] = startTime.split(':').map(Number);
+            const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+            const startTotalMinutes = startHours * 60 + startMinutes;
+            const endTotalMinutes = endHours * 60 + endMinutes;        
+
+            // Calculate the time difference in minutes
+            const timeDifference = endTotalMinutes - startTotalMinutes;
+
+            // Determine system hours based on the time difference
+            if (timeDifference % 120 === 0) { 
+                systemHours = 60;
+            } else {
+                systemHours = 30;
+            }
+
+                const dayColumn = getDayColumnIndex(day);
+                const timeSlot = createTimeSlot(startTime, endTime, systemHours);
+                const timetable = document.getElementById('timetable');
+
+                timeSlot.forEach(slot => {
+                    if (conflictDetected) return; // Skip further processing if conflict is found
+
+                    let existingRow = document.getElementById(`row-${slot.time}`);
+                    if (!existingRow) {
+                        existingRow = createTableRow(slot.time);
+                        timetable.querySelector('tbody').appendChild(existingRow);
+                    }
+
+                    const cell = existingRow.cells[dayColumn];
+
+                    // Check for time conflicts
+                    if (cell.innerHTML !== "") {
+                        alert(`تستهبل! ما ينفع كلاسين في نفس الوقت في يوم ${day} وفي الوقت ${slot.time}`);
+                        /*alert(`Time conflict detected for ${day} from ${slot.time}`);*/
+                        conflictDetected = true;  // Set conflict flag to true
+                        return;
+                    }
+
+                    // Add course to the cell if no conflict
+                    cell.rowSpan = slot.rowSpan;
+                    cell.innerHTML = `${courseName}<br>${classNo}<br>${startTime} - ${endTime}`;
+                    cell.style.backgroundColor = courseColor;
+                    cell.classList.add('course-cell', 'p-2', 'text-white', 'font-semibold', 'text-sm');
+
+                    // Add animation to the new cell
+                    gsap.from(cell, {duration: 0.5, opacity: 0, y: 20, ease: "power2.out"});
+                });
+            });
+
+            // If a conflict was detected, stop further execution
+            if (conflictDetected) return;
+
+            // Push the course details into the courses array
+            courses.push({ name: courseName, color: courseColor });
+            sortTimetableRows();
+
+            // Clear form fields after adding the course
+            document.getElementById('course').value = '';
+            document.getElementById('class').value = '';
+            document.getElementById('startTime').value = '';
+            document.getElementById('endTime').value = '';
+            document.querySelectorAll('input[name="days"]').forEach(cb => cb.checked = false);
+        }
 
 
         function sortTimetableRows() {
@@ -330,7 +349,7 @@
             return row;
         }
 
-        function createTimeSlot(startTime, endTime) {
+        function createTimeSlot(startTime, endTime, systemHours) {
             const start = new Date(`1970-01-01T${startTime}:00`);
             const end = new Date(`1970-01-01T${endTime}:00`);
             const timeSlots = [];
@@ -338,10 +357,11 @@
             while (start < end) {
                 const startHours = String(start.getHours()).padStart(2, '0');
                 const startMinutes = String(start.getMinutes()).padStart(2, '0');
-                const endHours = String(new Date(start.getTime() + 30 * 60000).getHours()).padStart(2, '0');
-                const endMinutes = String(new Date(start.getTime() + 30 * 60000).getMinutes()).padStart(2, '0');
+                /* 30 or 60 */
+                const endHours = String(new Date(start.getTime() + systemHours * 60000).getHours()).padStart(2, '0');
+                const endMinutes = String(new Date(start.getTime() + systemHours * 60000).getMinutes()).padStart(2, '0');
                 timeSlots.push({ time: `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`, rowSpan: 1 });
-                start.setMinutes(start.getMinutes() + 30);
+                start.setMinutes(start.getMinutes() + systemHours);
             }
 
             return timeSlots;
