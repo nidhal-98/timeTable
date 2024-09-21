@@ -348,12 +348,19 @@
         }
 
         function clearTimetable() {
-            const timetable = document.getElementById('timetable').querySelector('tbody');
-            timetable.innerHTML = '';
-            courses = [];
-            courseColors = {};
-            colorIndex = 0;
-        }
+    // Ask for confirmation
+    const confirmation = confirm("متأكد بتحذف كل شي؟ ترا ماشي تراجع بعدين");
+    
+    // If user confirms, clear the timetable
+    if (confirmation) {
+        const timetable = document.getElementById('timetable').querySelector('tbody');
+        timetable.innerHTML = '';
+        courses = [];
+        courseColors = {};
+        colorIndex = 0;
+    }
+}
+
 
 
         function toggleDarkMode() {
