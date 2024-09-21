@@ -252,10 +252,12 @@
             const timeDifference = endTotalMinutes - startTotalMinutes;
 
             // Determine system hours based on the time difference
-            if (timeDifference % 120 === 0) { 
+            if (timeDifference / 60 === 1) { 
                 systemHours = 60;
-            } else {
+            } else if(timeDifference % 60 !== 0) {
                 systemHours = 30;
+            } else {
+                systemHours = 120;
             }
 
                 const dayColumn = getDayColumnIndex(day);
